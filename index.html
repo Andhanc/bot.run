@@ -100,7 +100,7 @@
         /* Стили для анимированного логотипа */
         .logo-animation-section {
             position: relative;
-            height: 55vh; /* Как при разрешении 1024px */
+            height: 52vh; /* Как при разрешении 1024px */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -1023,8 +1023,8 @@
             }
             
             .main-img {
-                width: 220px;
-                height: 220px;
+                width: 270px;
+                height: 270px;
             }
             
             .small-img {
@@ -1163,8 +1163,8 @@
             }
             
             .main-img {
-                width: 180px;
-                height: 180px;
+                width: 200px;
+                height: 200px;
             }
             
             .small-img {
@@ -1240,8 +1240,8 @@
             }
             
             .main-img {
-                width: 140px;
-                height: 140px;
+                width: 170px;
+                height: 170px;
             }
             
             .small-img {
@@ -1461,6 +1461,11 @@
             color: #64748b;
             margin-bottom: 20px;
             line-height: 1.6;
+        }
+        
+        .telegram-modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 136, 204, 0.4);
         }
         
         .portfolio-modal-gallery {
@@ -2146,7 +2151,7 @@
                 <p class="hero-description">Мы - <b>бот.ран</b>, команда профессионалов, специализирующаяся на разработке ботов для Telegram и других мессенджеров, а также на создании веб-сайтов и мобильных приложений. </p>
                 <p class="hero-description">Мы решаем задачи любой сложности: от простых Telegram-ботов для личного пользования до крупных многопользовательских проектов со сложным функционалом.</p>
                 <p class="hero-description">Ниже вы можете ознакомиться с примерами наших работ и узнать подробней о нашем деле.<b> Давайте сотрудничать!</b></p>  
-                  <a href="#" class="hero-btn" style="
+                  <a href="https://web.telegram.org/a/#1489149643" target="_blank" class="hero-btn" style="
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -2551,8 +2556,8 @@
                     ]
                 },
                 {
-                    title: "больше кейсов",
-                    description: "Дополнительные кейсы можно запросить у нашего менеджера @Golodos_tudors в Телеграм",
+                    title: "Больше кейсов",
+                    description: "Дополнительные кейсы можно запросить у нашего менеджера @Golodos_tudors",
                      images: [
                        
                     ]
@@ -2649,6 +2654,39 @@
                     // Заполняем модальное окно
                     modalTitle.textContent = data.title;
                     modalDescription.textContent = data.description;
+                    
+                    // Добавляем кнопку для кейса "больше кейсов"
+                    if (data.title.toLowerCase().includes('больше кейсов')) {
+                        const telegramButton = document.createElement('a');
+                        telegramButton.href = 'https://web.telegram.org/a/#1489149643';
+                        telegramButton.target = '_blank';
+                        telegramButton.className = 'telegram-modal-btn';
+                        telegramButton.style.cssText = `
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 12px 24px;
+                            background: linear-gradient(135deg, #0088cc, #00a2e8);
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 20px;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            font-weight: 600;
+                            font-size: 19px;
+                            border: none;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+                            gap: 8px;
+                            margin: 15px 0px;
+                            float: right;
+                        `;
+                        telegramButton.innerHTML = `
+                            <i class="fab fa-telegram-plane" style="font-size: 18px;"></i>
+                            Написать в телеграм
+                        `;
+                        modalDescription.appendChild(telegramButton);
+                    }
                     
                     // Очищаем и заполняем галерею
                     modalGallery.innerHTML = '';
@@ -4753,8 +4791,6 @@ document.addEventListener('DOMContentLoaded', function() {
             dot.addEventListener('click', () => goToSlide(index));
         });
         
-        // Автопрокрутка отключена по требованию — слайды переключаются только вручную
-        
         // Обработка свайпов на мобильных устройствах
         let touchStartX = 0;
         let touchEndX = 0;
@@ -4821,7 +4857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h2 class="order-title">Готовы начать проект?</h2>
                 <p class="order-description">Оставьте заявку прямо сейчас и получите бесплатную консультацию от нашего специалиста. Мы поможем реализовать ваши идеи в кратчайшие сроки!</p>
                 
-                <a href="#order-form" class="order1-btn" id="main-order-btn">
+                <a href="https://web.telegram.org/a/#1489149643" target="_blank" class="order1-btn" id="main-order-btn">
                     Заказать проект
                 </a>
                 
@@ -4852,7 +4888,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </section>
     
     <!-- Форма заказа (будет открываться по клику) -->
-    <div class="modal-overlay" id="order-form">
+  <!--   <div class="modal-overlay" id="order-form">
         <div class="modal-content">
             <div class="modal-close" id="order-form-close">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -4896,57 +4932,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </form>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <script>
         // Инициализация секции заказа
         function initOrderSection() {
-            const orderBtn = document.getElementById('main-order-btn');
-            const orderForm = document.getElementById('order-form');
-            const orderFormClose = document.getElementById('order-form-close');
-            const orderFormElement = document.getElementById('orderForm');
-            
-            // Открытие формы заказа
-            orderBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                orderForm.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            });
-            
-            // Закрытие формы заказа
-            orderFormClose.addEventListener('click', function() {
-                orderForm.classList.remove('active');
-                document.body.style.overflow = '';
-            });
-            
-            // Закрытие при клике вне формы
-            orderForm.addEventListener('click', function(e) {
-                if (e.target === orderForm) {
-                    orderForm.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-            });
-            
-            // Обработка отправки формы
-            orderFormElement.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Здесь можно добавить отправку данных на сервер
-                alert('Спасибо за заявку! Мы свяжемся с вами в ближайшее время.');
-                orderForm.classList.remove('active');
-                document.body.style.overflow = '';
-                
-                // Очистка формы
-                orderFormElement.reset();
-            });
-            
-            // Закрытие при нажатии Escape
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && orderForm.classList.contains('active')) {
-                    orderForm.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-            });
+            // Кнопка теперь работает как обычная ссылка, дополнительная логика не требуется
         }
         
         // Инициализация при загрузке страницы
