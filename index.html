@@ -4468,9 +4468,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Обновляем линию прогресса
-            const progress = (contentNumber - 1) / (pathDots.length - 1) * 100;
-            pathLine.style.width = `${progress}%`;
+            // Обновляем линию прогресса (если элемент существует)
+            if (pathLine && pathDots.length > 0) {
+                const progress = (contentNumber - 1) / (pathDots.length - 1) * 100;
+                pathLine.style.width = `${progress}%`;
+            }
             
             // Показываем активный контент
             contentItems.forEach(item => {
@@ -4704,10 +4706,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .faq-slider {
         display: flex;
-        overflow-x: hidden;
+        overflow-x: auto;
         scroll-behavior: smooth;
         border-radius: 16px;
         margin-bottom: 30px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        -ms-overflow-style: none; /* IE и Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+
+    .faq-slider::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
     
     .faq-card {
@@ -4719,6 +4729,7 @@ document.addEventListener('DOMContentLoaded', function() {
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         margin-right: 20px;
+        scroll-snap-align: start;
     }
     
     .faq-card:last-child {
@@ -4922,6 +4933,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let currentSlide = 0;
         const slideCount = cards.length;
+        let isDown = false;
+        let startX = 0;
+        let scrollStartLeft = 0;
+        let isDragging = false;
+        let dragStartTime = 0;
+        let lastX = 0;
+        let lastTime = 0;
+        let velocity = 0;
         
         // Функция для перехода к определенному слайду
         function goToSlide(index) {
@@ -4983,6 +5002,98 @@ document.addEventListener('DOMContentLoaded', function() {
                 goToSlide(currentSlide - 1); // Свайп вправо
             }
         }
+
+        // Drag-to-scroll мышью и тачем + инерция
+        function getSlideMetrics() {
+            const cardWidth = cards[0].offsetWidth;
+            const cardMargin = parseInt(getComputedStyle(cards[0]).marginRight) || 0;
+            return cardWidth + cardMargin;
+        }
+
+        function snapToNearest() {
+            const step = getSlideMetrics();
+            const index = Math.round(slider.scrollLeft / step);
+            currentSlide = Math.max(0, Math.min(slideCount - 1, index));
+            slider.scrollTo({ left: currentSlide * step, behavior: 'smooth' });
+            updateDots();
+        }
+
+        function onPointerDown(clientX) {
+            isDown = true;
+            isDragging = false;
+            startX = clientX;
+            scrollStartLeft = slider.scrollLeft;
+            dragStartTime = performance.now();
+            lastX = clientX;
+            lastTime = dragStartTime;
+            velocity = 0;
+        }
+
+        function onPointerMove(clientX) {
+            if (!isDown) return;
+            const dx = clientX - startX;
+            if (Math.abs(dx) > 5) isDragging = true;
+            slider.scrollLeft = scrollStartLeft - dx;
+            const now = performance.now();
+            const dt = now - lastTime;
+            if (dt > 0) {
+                velocity = (clientX - lastX) / dt; // px/ms
+                lastX = clientX;
+                lastTime = now;
+            }
+        }
+
+        function onPointerUp() {
+            if (!isDown) return;
+            isDown = false;
+            // Инерция
+            let currentVelocity = velocity * 1000; // px/s
+            const friction = 0.92;
+            const minVelocity = 20; // px/s
+            function stepInertia() {
+                if (Math.abs(currentVelocity) < minVelocity) {
+                    snapToNearest();
+                    return;
+                }
+                slider.scrollLeft -= currentVelocity / 60; // assume ~60fps
+                currentVelocity *= friction;
+                requestAnimationFrame(stepInertia);
+            }
+            if (isDragging) {
+                requestAnimationFrame(stepInertia);
+            } else {
+                snapToNearest();
+            }
+        }
+
+        // Mouse events
+        slider.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            onPointerDown(e.clientX);
+        });
+        window.addEventListener('mousemove', (e) => onPointerMove(e.clientX));
+        window.addEventListener('mouseup', onPointerUp);
+
+        // Touch events (перетаскивание с инерцией)
+        slider.addEventListener('touchstart', (e) => onPointerDown(e.touches[0].clientX), { passive: true });
+        slider.addEventListener('touchmove', (e) => onPointerMove(e.touches[0].clientX), { passive: true });
+        slider.addEventListener('touchend', onPointerUp);
+
+        // Синхронизация точек при ручной прокрутке
+        let scrollSyncRaf = null;
+        slider.addEventListener('scroll', () => {
+            if (scrollSyncRaf) return;
+            scrollSyncRaf = requestAnimationFrame(() => {
+                const step = getSlideMetrics();
+                const index = Math.round(slider.scrollLeft / step);
+                const clamped = Math.max(0, Math.min(slideCount - 1, index));
+                if (clamped !== currentSlide) {
+                    currentSlide = clamped;
+                    updateDots();
+                }
+                scrollSyncRaf = null;
+            });
+        });
     }
     
     // Инициализация при загрузке страницы
@@ -5276,6 +5387,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Анимация счетчиков
         function animateCounter(elementId, targetNumber, suffix = '') {
             const element = document.getElementById(elementId);
+            
+            // Проверяем существование элемента
+            if (!element) {
+                return;
+            }
+            
             const duration = 2000; // Длительность анимации в мс
             const startNumber = 0;
             const startTime = performance.now();
@@ -5331,6 +5448,11 @@ document.addEventListener('DOMContentLoaded', function() {
             ];
             
             function updateSlider() {
+                // Проверяем существование элементов перед использованием
+                if (!cards || cards.length === 0 || !slider) {
+                    return;
+                }
+                
                 // Получаем актуальные размеры карточки и gap
                 const cardElement = cards[0];
                 const cardRect = cardElement.getBoundingClientRect();
@@ -5534,6 +5656,96 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Инициализация табов образования
             initEducationTabs();
+        });
+    </script>
+    
+    <!-- Скрипт для отслеживания целей Яндекс.Метрики -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверка доступности Яндекс.Метрики (только для отладки)
+            if (typeof ym === 'undefined') {
+                console.error('❌ Яндекс.Метрика не загружена!');
+            }
+            // Отслеживание клика по кнопке "Заказать проект"
+            const orderBtn = document.getElementById('main-order-btn');
+            if (orderBtn) {
+                orderBtn.addEventListener('click', function() {
+                    // Отправка события в Яндекс.Метрику
+                    if (typeof ym !== 'undefined') {
+                        ym(104109152, 'reachGoal', 'order_project_click', {
+                            button_location: 'main_order_section',
+                            button_text: 'Заказать проект'
+                        });
+                    }
+                    // Событие отправлено в Яндекс.Метрику
+                });
+            }
+
+            // Отслеживание клика по кнопке "Написать в телеграм" в hero секции
+            const heroTelegramBtn = document.querySelector('.hero-btn');
+            if (heroTelegramBtn) {
+                heroTelegramBtn.addEventListener('click', function() {
+                    // Отправка события в Яндекс.Метрику
+                    if (typeof ym !== 'undefined') {
+                        ym(104109152, 'reachGoal', 'telegram_click', {
+                            button_location: 'hero_section',
+                            button_text: 'Написать в телеграм'
+                        });
+                    }
+                    // Событие отправлено в Яндекс.Метрику
+                });
+            }
+
+            // Отслеживание всех остальных ссылок на Telegram
+            const allTelegramLinks = document.querySelectorAll('a[href*="t.me"]');
+            allTelegramLinks.forEach(function(link, index) {
+                // Пропускаем уже обработанные кнопки
+                if (link.id === 'main-order-btn' || link.classList.contains('hero-btn')) {
+                    return;
+                }
+
+                link.addEventListener('click', function() {
+                    const buttonLocation = this.closest('.portfolio-item') ? 'portfolio' : 
+                                         this.closest('.order-section') ? 'order_section' : 'other';
+                    
+                    // Отправка события в Яндекс.Метрику
+                    if (typeof ym !== 'undefined') {
+                        ym(104109152, 'reachGoal', 'telegram_click', {
+                            button_location: buttonLocation,
+                            button_text: this.textContent.trim(),
+                            link_url: this.href
+                        });
+                    }
+                    // Событие отправлено в Яндекс.Метрику
+                });
+            });
+
+            // Функция для ручного тестирования (можно вызвать из консоли)
+            window.testMetrikaGoals = function() {
+                console.log('🧪 Тестирование целей Яндекс.Метрики...');
+                
+                if (typeof ym !== 'undefined') {
+                    // Тест цели "Заказать проект"
+                    ym(104109152, 'reachGoal', 'order_project_click', {
+                        button_location: 'test',
+                        button_text: 'Тест - Заказать проект'
+                    });
+                    console.log('✅ Тест: order_project_click отправлен');
+                    
+                    // Тест цели "Telegram"
+                    ym(104109152, 'reachGoal', 'telegram_click', {
+                        button_location: 'test',
+                        button_text: 'Тест - Написать в телеграм'
+                    });
+                    console.log('✅ Тест: telegram_click отправлен');
+                    
+                    console.log('🎉 Все тесты выполнены! Проверьте Яндекс.Метрику.');
+                } else {
+                    console.error('❌ Яндекс.Метрика не загружена!');
+                }
+            };
+            
+            // Функция testMetrikaGoals() доступна для отладки
         });
     </script>
     
